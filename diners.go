@@ -10,21 +10,21 @@ import (
 type ChopS struct{ sync.Mutex }	// chopstick held by one at a time
 
 type Philo struct {
-  badge int		// philosopher's id
-  stick []*ChopS	// left and right chopstick
+  badge int		                  // philosopher's id
+  stick []*ChopS	              // left and right chopstick
 }
 
-const pop = 5		// population
-const sit = 3		// sittings
-const plates = 2	// simultaneous eaters
+const pop = 5		                // population
+const sit = 3		                // sittings
+const plates = 2	              // simultaneous eaters
 
 func (p Philo) eat(table chan int, wg *sync.WaitGroup) {
-  for b:=0; b<sit; b++ {	// each p eats sit times
-    side := rand.Intn(2)	// random 0 or 1
+  for b:=0; b<sit; b++ {	      // each p eats sit times
+    side := rand.Intn(2)	      // pick up left or right stick first
 
-    table <- p.badge		// this p wants to eat
-    p.stick[side].Lock()	// get left chopstick
-    p.stick[1-side].Lock()	// get right chopstick
+    table <- p.badge		        // this p wants to eat
+    p.stick[side].Lock()	      // get first chopstick
+    p.stick[1-side].Lock()	    // get second chopstick
 
     fmt.Println("starting to eat", p.badge)
     fmt.Println("finishing eating", p.badge)
@@ -32,7 +32,7 @@ func (p Philo) eat(table chan int, wg *sync.WaitGroup) {
     p.stick[1-side].Unlock()	// done
     p.stick[side].Unlock()
   }
-  wg.Done()		// everyone has eaten thrice
+  wg.Done()		// done eating remove one from waitgroup
 }
 
 var line int		// ~ status at the table
@@ -59,19 +59,19 @@ func main() {
 
   philos := make([]*Philo, pop)
   for i := 0; i < pop; i++ {
-    philos[i] = &Philo{i+1,[]*ChopS{CSticks[i],CSticks[(i+1)%5]}}
+    philos[i] = &Philo{i+1, []*ChopS{ CSticks[i], CSticks[(i+1)%5] }}
   }
 
   table := make(chan int, plates)
-  var wg sync.WaitGroup		// setup to wait
-  wg.Add(pop)			// for all eaters
+  var wg sync.WaitGroup             // setup to wait
+  wg.Add(pop)			                  // for all eaters
 
-  go host(table)		// start thread using channel
+  go host(table)		                // limit by number of plates
 
   for i := 0; i < pop; i++ {
-    go philos[i].eat(table, &wg)
+    go philos[i].eat(table, &wg)    // thread for each eater
   }
-  wg.Wait()
+  wg.Wait()                         // wait for all threads to end
   close(table)
 }
 
